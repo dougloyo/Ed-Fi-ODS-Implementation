@@ -108,9 +108,9 @@ function Merge-HashtablesOrDefaults {
     return (Merge-Hashtables $Hashtables $MergeWith)
 }
 
-function Get-FlatHashTable {
+function Get-FlatHashtable {
     param(
-        [hashtable] $Hastable,
+        [hashtable] $Hashtable,
 
         [string] $Delimiter = ':'
     )
@@ -139,7 +139,7 @@ function Get-FlatHashTable {
         }
     }
 
-    Get-FlatObject($Hastable)
+    Get-FlatObject($Hashtable)
 
     return $result
 }
@@ -162,47 +162,72 @@ function Get-UnFlatObject {
 
         $Value,
 
-        $Object
+        $Object,
+
+        [string] $Delimiter = ':'
     )
 
-    $RegExFilter = "\A(?<curr>[^:]+)(:(?<remain>(?<sub>[^:]+)(:.*)?))?\Z"
+    $firstKey, $remainingKeys = ($Key -split $Delimiter, 2)
 
-    if ($Value) {
-        if ($key -match $RegExFilter) {
-            $Current = $matches.curr
-
-            if (-not ($Object | gm $Current)) {
-                if (-not $Object.ContainsKey($Current)) {
-                    $Object.$Current = @{ }
-                }
-            }
-
-            if ($matches.remain) {
-                $Object.$Current = Get-UnFlatObject -Key $matches.remain -Value $Value -Obj ($Object.$Current)
-            }
-            else {
-                $Object.$Current = $Value
-            }
-
-            return $Object
-        }
+    if (-not $Object.ContainsKey($firstKey)) {
+        $Object[$firstKey] = @{ }
     }
+
+    if ($remainingKeys) {
+        $Object[$firstKey] = Get-UnFlatObject $remainingKeys $Value $Object[$firstKey]
+    }
+    else {
+        $Object[$firstKey] = $Value
+    }
+
+    return $Object
 }
 
-function Get-UnFlatHashTable {
+function Convert-HashtableToArray {
     param(
         [Hashtable] $Hashtable
     )
 
-    $resultTable = @{ }
+    $result = @{ }
 
-    foreach ($key in $Hashtable.Keys) {
-        if ($Hashtable.$key) {
-            $resultTable = Get-UnFlatObject -Key $key -Value $Hashtable.$key -Obj $resultTable
+    function Convert-NextHashtable {
+        param(
+            [Hashtable] $Object,
+
+            [string] $Name
+        )
+
+        foreach ($key in $Object.Keys) {
+            $keysAsIntegers = ($Object.Keys | ForEach-Object { $_ -as [int] }) | Sort-Object
+            $isConsecutiveIntegers = ($keysAsIntegers.Count -eq $Object.Keys.Count) -and ($null -eq (Compare-Object $keysAsIntegers @(0..$keysAsIntegers[-1])))
+
+            if ($isConsecutiveIntegers) {
+                $result[$Name] = @()
+                $keysAsIntegers | ForEach-Object { $result[$Name] += $Object[$_ -as [string]] }
+            }
+            else {
+                $result[$Name] = Convert-NextHashtable $Object[$key] $key
+            }
         }
     }
 
-    return $resultTable
+    Convert-NextHashtable $Hashtable[$key] $key
+
+    return $result
+}
+
+function Get-UnFlatHashtable {
+    param(
+        [Hashtable] $Hashtable
+    )
+
+    $result = @{ }
+
+    foreach ($key in $Hashtable.Keys) {
+        $result = Get-UnFlatObject $key $Hashtable[$key] $result
+    }
+
+    return Convert-HashtableToArray($result)
 }
 
 Export-ModuleMember -Function *

@@ -18,6 +18,15 @@ function Get-ProjectTypes {
     }
 }
 
+function Get-UserSecretsIdByProject {
+    return @{
+        ((Get-ProjectTypes).SandboxAdmin)           = "f1506d66-289c-44cb-a2e2-80411cc690ea"
+        ((Get-ProjectTypes).SwaggerUI)              = "f1506d66-289c-44cb-a2e2-80411cc690eb"
+        ((Get-ProjectTypes).WebApi)                 = "f1506d66-289c-44cb-a2e2-80411cc690ec"
+        ((Get-ProjectTypes).IntegrationTestHarness) = "f1506d66-289c-44cb-a2e2-80411cc690ed"
+    }
+}
+
 function Get-DefaultDevelopmentSettingsByProject {
     return @{
         ((Get-ProjectTypes).WebApi)                 = @{
@@ -326,13 +335,14 @@ function Get-UserSecrets([string] $Project) {
 
         if ($userSecretList -notlike "*No secrets configured for this application*" -and ($null -ne $userSecretList)) {
             $inputTable = ConvertFrom-StringData -StringData $userSecretList
+            Write-FlatHashtable $inputTable
         }
 
-        $resultTable = Get-UnFlatHashTable($inputTable)
+        $resultTable = Get-UnFlatHashtable($inputTable)
     }
     catch {
         Write-Host $_.Exception.Message -ForegroundColor Yellow
-    }
+    }`
 
     return ($resultTable)
 }
@@ -468,15 +478,6 @@ function Remove-WebApiSpecificSettings([hashtable] $Settings = @{ }, [string] $P
     $newSettings.ApiSettings.Remove('Mode')
 
     return $newSettings
-}
-
-function Get-UserSecretsIdByProject {
-    return @{
-        ((Get-ProjectTypes).SandboxAdmin)           = "f1506d66-289c-44cb-a2e2-80411cc690ea"
-        ((Get-ProjectTypes).SwaggerUI)              = "f1506d66-289c-44cb-a2e2-80411cc690eb"
-        ((Get-ProjectTypes).WebApi)                 = "f1506d66-289c-44cb-a2e2-80411cc690ec"
-        ((Get-ProjectTypes).IntegrationTestHarness) = "f1506d66-289c-44cb-a2e2-80411cc690ed"
-    }
 }
 
 function New-DevelopmentAppSettings([hashtable] $Settings = @{ }) {

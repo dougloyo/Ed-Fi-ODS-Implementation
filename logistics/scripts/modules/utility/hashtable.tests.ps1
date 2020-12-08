@@ -234,22 +234,78 @@ Describe 'Get-FlatHashtable' {
     }
 }
 
-Describe 'Get-UnFlatHashTable' {
-    It "Convert the flatten hashtables into a new unflatten hashtable" {
-    $a = @{
-    'a:b:c' = 'd'
-    'a:b:e:f:g' = 'h'
+Describe 'Get-UnFlatHashtable' {
+    It "Converts objects into a new un-flattened hashtable" {
+        $a = @{
+            'a:b:c'     = 'd'
+            'a:b:e:f:g' = 'h'
+        }
+
+        $result = Get-UnFlatHashtable $a
+
+        write-flathashtable $a
+        write-flathashtable $result
+        $result | ConvertTo-Json -Depth 100 | Out-Host
+
+        $result | Should -BeOfType [System.Collections.Hashtable]
+        $result.a | Should -BeOfType [System.Collections.Hashtable]
+        $result.a.b | Should -BeOfType [System.Collections.Hashtable]
+        $result.a.b.c | Should -Be 'd'
+        $result.a.b.e | Should -BeOfType [System.Collections.Hashtable]
+        $result.a.b.e.f | Should -BeOfType [System.Collections.Hashtable]
+        $result.a.b.e.f.g | Should -Be 'h'
+
     }
 
-    $result = Get-UnFlatHashTable $a
+    It "Converts arrays into a new un-flattened hashtable" {
+        $a = @{
+            'a:1' = 4
+            'a:0' = 3
+            'a:2' = 5
+        }
 
-    $result | Should -BeOfType [System.Collections.Hashtable]
-    $result.a | Should -BeOfType [System.Collections.Hashtable]
-    $result.a.b | Should -BeOfType [System.Collections.Hashtable]
-    $result.a.b.c | Should -Be 'd'
-    $result.a.b.e | Should -BeOfType [System.Collections.Hashtable]
-    $result.a.b.e.f | Should -BeOfType [System.Collections.Hashtable]
-    $result.a.b.e.f.g | Should -Be 'h'
+        $result = Get-UnFlatHashtable $a
 
-   }
+        $result | Should -BeOfType [System.Collections.Hashtable]
+        $result.a | Should -BeOfType [System.Object[]]
+        $result.a[0] | Should -Be 0
+        $result.a[1] | Should -Be 1
+        $result.a[2] | Should -Be 2
+    }
+
+    It "Converts arrays into a new un-flattened hashtable" {
+        $a = @{
+            'a:1' = 4
+            'a:0' = 3
+            'a:2' = 5
+            'a:f' = 6
+        }
+
+        $result = Get-UnFlatHashtable $a
+
+        $result | Should -BeOfType [System.Collections.Hashtable]
+        $result.a | Should -BeOfType [System.Object[]]
+        $result.a[0] | Should -Be 0
+        $result.a[1] | Should -Be 1
+        $result.a[2] | Should -Be 2
+    }
+
+    It "Converts objects and arrays into a new un-flattened hashtable" {
+        $a = @{
+            'a:b:0' = 0
+            'a:b:1' = 1
+            'a:b:2' = 2
+            'a:c'   = 3
+        }
+
+        $result = Get-UnFlatHashtable $a
+
+        $result | Should -BeOfType [System.Collections.Hashtable]
+        $result.a | Should -BeOfType [System.Collections.Hashtable]
+        $result.a.b | Should -BeOfType [System.Collections.Hashtable]
+        $result.a.b.c | Should -Be 'd'
+        $result.a.b.e | Should -BeOfType [System.Collections.Hashtable]
+        $result.a.b.e.f | Should -BeOfType [System.Collections.Hashtable]
+        $result.a.b.e.f.g | Should -Be 'h'
+    }
 }
